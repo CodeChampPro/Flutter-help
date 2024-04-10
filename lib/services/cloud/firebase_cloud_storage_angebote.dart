@@ -4,18 +4,18 @@ import 'package:mynotes/services/cloud/cloud_note.dart';
 import 'package:mynotes/services/cloud/cloud_storage_constants.dart';
 import 'package:mynotes/services/cloud/cloud_storage_exceptions.dart';
 
-class FirebaseCloudStorage {
-  final notes = FirebaseFirestore.instance.collection('notes');
+class FirebaseCloudStorageAngebote {
+  final notesAngebote = FirebaseFirestore.instance.collection('notesAngebote');
 
-  Future<void> deleteNote({required String documentId}) async {
+  Future<void> deleteNoteAngebote({required String documentId}) async {
     try {
-      await notes.doc(documentId).delete();
+      await notesAngebote.doc(documentId).delete();
     } catch (e) {
       throw CouldNotDeleteNoteException();
     }
   }
 
-  Future<void> updateNote({
+Future<void> updateNoteAngebote({
     required String documentId,
     required String textJob,
     required String textAdresse,
@@ -26,7 +26,7 @@ class FirebaseCloudStorage {
     required String textStadtviertel
   }) async {
     try {
-      await notes.doc(documentId).update({
+      await notesAngebote.doc(documentId).update({
         textJobFieldName: textJob,
         textAdresseFieldName: textAdresse,
         textBezahlungFieldName: textBezahlung,
@@ -43,8 +43,8 @@ class FirebaseCloudStorage {
     }
   }
 
-  Stream<Iterable<CloudNote>> allNotes(String searchResult) {
-    final allNotes = notes
+  Stream<Iterable<CloudNote>> allNotesAngebote(String searchResult) {
+    final allNotes = notesAngebote
         .orderBy('jobText', descending: true)
         .snapshots()
         .map((event) => event.docs.map((doc) => CloudNote.fromSnapshot(doc)));
@@ -53,11 +53,11 @@ class FirebaseCloudStorage {
     
     
 
-  Future<CloudNote> createNewNote({required String ownerUserId}) async {
+  Future<CloudNote> createNewNoteAngebote({required String ownerUserId}) async {
     final deletionTime = DateTime.now().add(const Duration(days: 14));
     final deletionTimestamp = Timestamp.fromDate(deletionTime);
     String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final document = await notes.add({
+    final document = await notesAngebote.add({
       ownerUserIdFieldName: ownerUserId,
       textJobFieldName: '',
       textAdresseFieldName: '',
@@ -67,10 +67,11 @@ class FirebaseCloudStorage {
       textStadtFieldName:'',
       textStadtviertelFieldName: '',
       textAngebotFieldName: '',
-      deletionTimeFieldName: deletionTimestamp,
+      deletionTimeFieldName: deletionTime,
       userIdFieldName: currentUserId,
     });
     final fetchedNote = await document.get();
+    
     return CloudNote(
       documentId: fetchedNote.id,
       ownerUserId: ownerUserId,
@@ -87,8 +88,8 @@ class FirebaseCloudStorage {
     );
   }
 
-  static final FirebaseCloudStorage _shared =
-      FirebaseCloudStorage._sharedInstance();
-  FirebaseCloudStorage._sharedInstance();
-  factory FirebaseCloudStorage() => _shared;
+  static final FirebaseCloudStorageAngebote _shared =
+      FirebaseCloudStorageAngebote._sharedInstance();
+  FirebaseCloudStorageAngebote._sharedInstance();
+  factory FirebaseCloudStorageAngebote() => _shared;
 }

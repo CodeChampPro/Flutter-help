@@ -17,6 +17,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.loc.verify_email),
+        backgroundColor: Colors.green.shade200,
       ),
       body: SingleChildScrollView(
         child: Column(

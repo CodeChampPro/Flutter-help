@@ -1,6 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mynotes/constants/routes.dart';
+import 'package:mynotes/firebase_options.dart';
 import 'package:mynotes/helpers/loading/loading_screen.dart';
 import 'package:mynotes/services/auth/bloc/auth_bloc.dart';
 import 'package:mynotes/services/auth/bloc/auth_event.dart';
@@ -8,15 +11,22 @@ import 'package:mynotes/services/auth/bloc/auth_state.dart';
 import 'package:mynotes/services/auth/firebase_auth_provider.dart';
 import 'package:mynotes/views/forgot_password_view.dart';
 import 'package:mynotes/views/login_view.dart';
+import 'package:mynotes/views/notes/angebote_notes_view.dart';
 import 'package:mynotes/views/notes/create_update_note_view.dart';
+import 'package:mynotes/views/notes/create_update_note_view_angebote.dart';
 import 'package:mynotes/views/notes/notes_view.dart';
+import 'package:mynotes/views/notes/show_notes.dart';
+import 'package:mynotes/views/notes/show_notes_angebote.dart';
+import 'package:mynotes/views/notes/users_notes_view.dart';
 import 'package:mynotes/views/register_view.dart';
 import 'package:mynotes/views/verify_email_view.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(
     MaterialApp(
       supportedLocales: AppLocalizations.supportedLocales,
@@ -24,14 +34,49 @@ void main() {
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        useMaterial3: true,
+
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green.shade800,
+          background: Colors.green.shade200,
+          brightness: Brightness.light,
+        ),
+
+        // Define the default `TextTheme`. Use this to specify the default
+        // text styling for headlines, titles, bodies of text, and more.
+        textTheme: TextTheme(
+          displayLarge: const TextStyle(
+            fontSize: 72,
+            fontWeight: FontWeight.bold,
+          ),
+          // ···
+          titleLarge: GoogleFonts.oswald(
+            fontSize: 30,
+            fontStyle: FontStyle.italic,
+          ),
+          bodyMedium: GoogleFonts.merriweather(),
+          displaySmall: GoogleFonts.pacifico(),
+        ),
       ),
       home: BlocProvider<AuthBloc>(
         create: (context) => AuthBloc(FirebaseAuthProvider()),
         child: const HomePage(),
       ),
       routes: {
+        notesViewRoute: (context) => const NotesView(),
         createOrUpdateNoteRoute: (context) => const CreateUpdateNoteView(),
+        usersNotesRoute: (context) => const UsersNotesView(),
+        createUpdateNoteViewAngeboteRoute: (context) =>
+            const CreateUpdateNoteViewAngebote(),
+        notesViewAngeboteRoute: (context) => const NotesViewAngebote(),
+        showNotesRoute: (context) {
+          final args = ModalRoute.of(context)!.settings.arguments.toString();
+          return ShowNoteView(documentId: args);
+        },
+        showNotesAngeboteRoute: (context) {
+          final args = ModalRoute.of(context)!.settings.arguments.toString();
+          return ShowNoteAngeboteView(documentId: args);
+        },
       },
     ),
   );

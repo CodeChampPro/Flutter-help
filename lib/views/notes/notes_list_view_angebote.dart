@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
-import 'package:mynotes/services/cloud/firebase_cloud_storage.dart';
+import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
 import 'package:mynotes/utilities/dialogs/delete_dialog.dart';
-import 'package:mynotes/utilities/generics/is_user_author.dart';
+import 'package:mynotes/utilities/generics/is_user_author_angebote.dart';
 
 typedef NoteCallback = void Function(CloudNote note);
-final _notesService = FirebaseCloudStorage();
-class NotesListView extends StatelessWidget {
+final _notesService = FirebaseCloudStorageAngebote();
+class NotesListViewAngebote extends StatelessWidget {
   final Iterable<CloudNote> notes;
   final NoteCallback onDeleteNote;
   final NoteCallback onTap;
 
-  const NotesListView({
+  const NotesListViewAngebote({
     Key? key,
     required this.notes,
     required this.onDeleteNote,
@@ -35,7 +35,7 @@ class NotesListView extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             trailing: FutureBuilder(
-                future: isUserAuthor(note.documentId),
+                future: isUserAuthorAngebote(note.documentId),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     bool isvisible = snapshot.data as bool;
@@ -45,7 +45,7 @@ class NotesListView extends StatelessWidget {
                         onPressed: () async {
                           final shouldDelete = await showDeleteDialog(context);
                           if (shouldDelete==true) {
-                            _notesService.deleteNote(documentId: note.documentId);
+                            _notesService.deleteNoteAngebote(documentId: note.documentId);
                           }else{
                             
                           }

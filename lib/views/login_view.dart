@@ -17,6 +17,7 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   late final TextEditingController _email;
   late final TextEditingController _password;
+  
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _LoginViewState extends State<LoginView> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(context.loc.login),
+          backgroundColor: Colors.green.shade200,
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),

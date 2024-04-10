@@ -1,27 +1,35 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, await_only_futures
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:mynotes/constants/routes.dart';
-import 'package:mynotes/extensions/buildcontext/loc.dart';
-import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
-import 'package:mynotes/services/cloud/firebase_cloud_storage.dart';
-import 'package:mynotes/utilities/dialogs/automatic_delete_dialog.dart';
+import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
+import 'package:mynotes/views/notes/angebote_notes_view.dart';
 
-class CreateUpdateNoteView extends StatefulWidget {
-  const CreateUpdateNoteView({Key? key}) : super(key: key);
+
+class EditNotesAngeboteView extends StatefulWidget {
+  final String documentId;
+  const EditNotesAngeboteView({Key? key, required this.documentId}) : super(key: key);
 
   @override
-  _CreateUpdateNoteViewState createState() => _CreateUpdateNoteViewState();
+  EditNotesAngeboteViewState createState() => EditNotesAngeboteViewState();
 }
 
-class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
-  CloudNote? _note;
+class EditNotesAngeboteViewState extends State<EditNotesAngeboteView> {
+   CloudNote? _note;
+  String jobText = 'Loading...'; // Initial value
+  String adresseText = 'Loading...';
+  String zeitText = 'Loading...';
+  String kontaktText= 'Loading...';
+  String bezahlungText = 'Loading...';
+  String stadtText = 'Loading...';
+  String stadtteilText = 'Loading...';
   var selectedOption = 'Wählen sie was sie haben wollen';
   var result = '';
-  var selectedOptionStadt = 'In welcher Stadt wohnen sie';
+  var selectedOptionStadt= 'In welcher Stadt wohnen sie';
   var selectedOptionStadtteil = 'In welchem stadtteil wohnen sie?';
-  late final FirebaseCloudStorage _notesService;
+
+  late final FirebaseCloudStorageAngebote _notesService;
   TextEditingController _adresseController = TextEditingController();
   TextEditingController _zeitController = TextEditingController();
   TextEditingController _bezahlungController = TextEditingController();
@@ -31,17 +39,19 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
 
   @override
   void initState() {
-    _notesService = FirebaseCloudStorage();
+    _notesService = FirebaseCloudStorageAngebote();
     _adresseController = TextEditingController();
     _zeitController = TextEditingController();
     _bezahlungController = TextEditingController();
     _kontaktController = TextEditingController();
     _stadtController = TextEditingController();
     _stadtviertelController = TextEditingController();
+    fetchNoteData(widget.documentId);
+    
     super.initState();
   }
 
-  void showPopupMenuJob(BuildContext context) async {
+  void showPopupMenu(BuildContext context) async {
     result = await showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -157,10 +167,12 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
         );
       },
     );
-    setState(() {});
-  }
-
-  void showPopupMenuStadtteil(BuildContext context) async {
+    setState(() {
+      
+    });
+    
+    }
+   void showPopupMenuStadtteil(BuildContext context) async {
     selectedOptionStadtteil = await showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -215,26 +227,30 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                 Navigator.pop(context, 'Passing');
               },
             ),
+            
           ],
         );
       },
     );
-    setState(() {});
-  }
+    setState(() {
+      
+    });
+    
+    }
 
-  void _textControllerListener() async {
+ void _textControllerListener() async {
     final note = _note;
     if (note == null) {
       return;
     }
     final textAdresse = _adresseController.text;
     final textZeit = _zeitController.text;
-    final textStadt = _stadtController.text;
-    final textStadtviertel = _stadtviertelController.text;
+    final textStadt = selectedOptionStadt;
+    final textStadtviertel = selectedOptionStadtteil;
     final textBezahlung = _bezahlungController.text;
     final textKontakt = _kontaktController.text;
     final textJob = selectedOption;
-    await _notesService.updateNote(
+    await _notesService.updateNoteAngebote(
       documentId: note.documentId,
       textAdresse: textAdresse,
       textStadt: textStadt,
@@ -245,7 +261,6 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       textZeit: textZeit,
     );
   }
-
   void _setupTextControllerListener() {
     _adresseController.removeListener(_textControllerListener);
     _adresseController.addListener(_textControllerListener);
@@ -261,127 +276,142 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     _stadtviertelController.addListener(_textControllerListener);
   }
 
-  Future<CloudNote> createOrGetExistingNote(BuildContext context) async {
-    final existingNote = _note;
-    if (existingNote != null) {
-      return existingNote;
+  Future<void> fetchNoteData(String documentId) async {
+    var collection = FirebaseFirestore.instance.collection('notesAngebote');
+    var docSnapshot = await collection.doc(documentId).get();
+    if (docSnapshot.exists) {
+      setState(() {
+        jobText = docSnapshot.data()?['jobText'] ?? 'No data';
+        adresseText = docSnapshot.data()?['adresseText'] ?? 'No data';
+        stadtText = docSnapshot.data()?['stadtText'] ?? 'No data';
+        stadtteilText = docSnapshot.data()?['stadtviertelText'] ?? 'No data';
+        zeitText = docSnapshot.data()?['zeitText'] ?? 'No data';
+        bezahlungText = docSnapshot.data()?['bezahlungText'] ?? 'No data';
+        kontaktText = docSnapshot.data()?['kontaktText'] ?? 'No data';
+      });
+    } else {
+      setState(() {
+        jobText = 'Document not found';
+        adresseText = 'Document not found';
+        stadtText = 'Document not found';
+        stadtteilText = 'Document not found';
+        kontaktText = 'Document not found';
+        bezahlungText = 'Document not found';
+        zeitText = 'Document not found';
+
+      });
     }
-    final currentUser = AuthService.firebase().currentUser!;
-    final userId = currentUser.id;
-    final newNote = await _notesService.createNewNote(ownerUserId: userId);
-    _note = newNote;
-    return newNote;
+    selectedOptionStadt = stadtText;
+    selectedOptionStadtteil = stadtteilText;
+    _adresseController.text = adresseText;
+    _zeitController.text = zeitText;
+    _bezahlungController.text = bezahlungText;
+    _kontaktController.text = kontaktText;
+    selectedOption = jobText;
   }
 
-  void _deleteNoteIfTextIsEmpty() {
+   void _deleteNoteIfTextIsEmpty() {
     final note = _note;
     if (_adresseController.text.isEmpty && note != null) {
-      _notesService.deleteNote(documentId: note.documentId);
+      _notesService.deleteNoteAngebote(documentId: note.documentId);
     }
   }
 
-  void _saveNoteIfTextNotEmpty() async {
-    final note = _note;
+  void _saveNoteIfTextNotEmpty(String documentId) async {
+    
     final textAdresse = _adresseController.text;
+    final textZeit = _zeitController.text;
     final textStadt = selectedOptionStadt;
     final textStadtviertel = selectedOptionStadtteil;
-    final textZeit = _zeitController.text;
     final textBezahlung = _bezahlungController.text;
     final textKontakt = _kontaktController.text;
     final textJob = selectedOption;
-    if (textAdresse.isNotEmpty && textJob.isNotEmpty) {
-      await _notesService.updateNote(
-        documentId: note!.documentId,
-        textAdresse: textAdresse,
-        textJob: textJob,
-        textBezahlung: textBezahlung,
-        textKontakt: textKontakt,
-        textZeit: textZeit,
-        textStadt: textStadt,
-        textStadtviertel: textStadtviertel,
-      );
-    }
+    
+    await _notesService.updateNoteAngebote(
+      documentId: documentId,
+      textAdresse: textAdresse,
+      textStadt: textStadt,
+      textStadtviertel: textStadtviertel,
+      textJob: textJob,
+      textBezahlung: textBezahlung,
+      textKontakt: textKontakt,
+      textZeit: textZeit,
+    );
   }
 
   @override
   void dispose() {
     _deleteNoteIfTextIsEmpty();
-    _saveNoteIfTextNotEmpty();
+    _saveNoteIfTextNotEmpty('');
     _adresseController.dispose();
     _kontaktController.dispose();
     _zeitController.dispose();
     _bezahlungController.dispose();
     _stadtController.dispose();
     _stadtviertelController.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    _setupTextControllerListener();
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          context.loc.note,
-        ),
+        title: const Text('Edit'),
         backgroundColor: Colors.green.shade200,
         actions: [
           IconButton(
-            onPressed: () {
-              _saveNoteIfTextNotEmpty();
-              
-              Navigator.of(context).pushNamedAndRemoveUntil(notesViewRoute, (route) => false);
-              showAutomaticDeleteDialog(context);
-            } 
-            
-            ,
+            onPressed: ()  {
+              _saveNoteIfTextNotEmpty(widget.documentId);
+             Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const NotesViewAngebote()),
+                (route) => false,
+              );
+            },
             icon: const Icon(Icons.save),
           )
         ],
       ),
-      body: FutureBuilder(
-        future: createOrGetExistingNote(context),
+      body:FutureBuilder(
+        future: fetchNoteData(''),
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
               _setupTextControllerListener();
+              _saveNoteIfTextNotEmpty(widget.documentId);
+              
 
               return Column(
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      showPopupMenuJob(context);
+                      showPopupMenu(context);
                     },
                     child: Text(selectedOption),
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                      onPressed: () {
-                        showPopupMenuStadt(context);
-                      },
-                      child: Text(selectedOptionStadt)),
+                  ElevatedButton(onPressed: () {
+                    showPopupMenuStadt(context);
+                  }, child: Text(selectedOptionStadt)),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                      onPressed: () {
-                        showPopupMenuStadtteil(context);
-                      },
-                      child: Text(selectedOptionStadtteil)),
+                  ElevatedButton(onPressed: () {
+                    showPopupMenuStadtteil(context);
+                  }, child: Text(selectedOptionStadtteil)),
                   TextField(
                     controller: _zeitController,
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration: const InputDecoration(
-                      hintText:
-                          'Geben sie an wann und wie oft der Job gemacht werden soll.',
+                      hintText: 'Geben sie an wann und wie oft der Job gemacht werden soll.',
                     ),
                   ),
+                  
                   TextField(
                     controller: _adresseController,
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration: const InputDecoration(
-                      hintText:
-                          'Geben sie an wo der Job ausgeführt werden soll.',
+                      hintText: 'Geben sie an wo der Job ausgeführt werden soll.',
                     ),
                   ),
                   TextField(
@@ -389,8 +419,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration: const InputDecoration(
-                      hintText:
-                          'Geben sie an was sie sich als bezahlung vorstellen könnten.',
+                      hintText: 'Geben sie an was sie sich als bezahlung vorstellen könnten.',
                     ),
                   ),
                   TextField(
@@ -412,3 +441,4 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     );
   }
 }
+    

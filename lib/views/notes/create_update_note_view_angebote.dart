@@ -5,23 +5,25 @@ import 'package:mynotes/constants/routes.dart';
 import 'package:mynotes/extensions/buildcontext/loc.dart';
 import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
-import 'package:mynotes/services/cloud/firebase_cloud_storage.dart';
+import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
 import 'package:mynotes/utilities/dialogs/automatic_delete_dialog.dart';
 
-class CreateUpdateNoteView extends StatefulWidget {
-  const CreateUpdateNoteView({Key? key}) : super(key: key);
+class CreateUpdateNoteViewAngebote extends StatefulWidget {
+  const CreateUpdateNoteViewAngebote({Key? key}) : super(key: key);
 
   @override
-  _CreateUpdateNoteViewState createState() => _CreateUpdateNoteViewState();
+  _CreateUpdateNoteViewAngeboteState createState() =>
+      _CreateUpdateNoteViewAngeboteState();
 }
 
-class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
+class _CreateUpdateNoteViewAngeboteState
+    extends State<CreateUpdateNoteViewAngebote> {
   CloudNote? _note;
-  var selectedOption = 'Wählen sie was sie haben wollen';
+  var selectedOption = 'Choose what you want to do';
   var result = '';
-  var selectedOptionStadt = 'In welcher Stadt wohnen sie';
-  var selectedOptionStadtteil = 'In welchem stadtteil wohnen sie?';
-  late final FirebaseCloudStorage _notesService;
+  var selectedOptionStadtAngebote = 'In which city do you live?';
+  var selectedOptionStadtteilAngebote = 'In district do you live?';
+  late final FirebaseCloudStorageAngebote _notesService;
   TextEditingController _adresseController = TextEditingController();
   TextEditingController _zeitController = TextEditingController();
   TextEditingController _bezahlungController = TextEditingController();
@@ -31,7 +33,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
 
   @override
   void initState() {
-    _notesService = FirebaseCloudStorage();
+    _notesService = FirebaseCloudStorageAngebote();
     _adresseController = TextEditingController();
     _zeitController = TextEditingController();
     _bezahlungController = TextEditingController();
@@ -55,21 +57,21 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
               },
             ),
             ListTile(
-              title: const Text('Nachhilfe'),
+              title: const Text('Tutoring'),
               onTap: () {
-                Navigator.pop(context, 'Nachhilfe');
+                Navigator.pop(context, 'Tutoring');
               },
             ),
             ListTile(
-              title: const Text('Rasenmähen'),
+              title: const Text('Lawnmoaing'),
               onTap: () {
-                Navigator.pop(context, 'Rasenmähen');
+                Navigator.pop(context, 'Lawnmoaing');
               },
             ),
             ListTile(
-              title: const Text('Andere'),
+              title: const Text('other'),
               onTap: () {
-                Navigator.pop(context, 'Andere');
+                Navigator.pop(context, 'other');
               },
             ),
           ],
@@ -77,19 +79,19 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       },
     );
 
-    if (result == 'Andere') {
+    if (result == 'other') {
       String? enteredOption = await showDialog(
         context: context,
         builder: (BuildContext context) {
           String enteredOption = '';
           return AlertDialog(
-            title: const Text('Benutzerdefinierte Option eingeben'),
+            title: const Text('choose your own'),
             content: TextField(
               onChanged: (value) {
                 enteredOption = value;
               },
               decoration: const InputDecoration(
-                hintText: 'Geben Sie hier Ihre Option ein',
+                hintText: 'what do you want to do?',
               ),
             ),
             actions: <Widget>[
@@ -97,7 +99,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                 onPressed: () {
                   Navigator.pop(context, null); // Cancel button
                 },
-                child: const Text('Abbrechen'),
+                child: const Text('Cancel'),
               ),
               TextButton(
                 onPressed: () {
@@ -123,16 +125,16 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   }
 
   void showPopupMenuStadt(BuildContext context) async {
-    selectedOptionStadt = await showModalBottomSheet(
+    selectedOptionStadtAngebote = await showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             ListTile(
-              title: const Text('München'),
+              title: const Text('Munich'),
               onTap: () {
-                Navigator.pop(context, 'München');
+                Navigator.pop(context, 'Munich');
               },
             ),
             ListTile(
@@ -161,7 +163,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   }
 
   void showPopupMenuStadtteil(BuildContext context) async {
-    selectedOptionStadtteil = await showModalBottomSheet(
+    selectedOptionStadtteilAngebote = await showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
         return Column(
@@ -222,19 +224,19 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     setState(() {});
   }
 
-  void _textControllerListener() async {
+  void _textControllerListenerAngebote() async {
     final note = _note;
     if (note == null) {
       return;
     }
     final textAdresse = _adresseController.text;
     final textZeit = _zeitController.text;
-    final textStadt = _stadtController.text;
-    final textStadtviertel = _stadtviertelController.text;
+    final textStadt = selectedOptionStadtAngebote;
+    final textStadtviertel = selectedOptionStadtteilAngebote;
     final textBezahlung = _bezahlungController.text;
     final textKontakt = _kontaktController.text;
     final textJob = selectedOption;
-    await _notesService.updateNote(
+    await _notesService.updateNoteAngebote(
       documentId: note.documentId,
       textAdresse: textAdresse,
       textStadt: textStadt,
@@ -246,29 +248,31 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     );
   }
 
-  void _setupTextControllerListener() {
-    _adresseController.removeListener(_textControllerListener);
-    _adresseController.addListener(_textControllerListener);
-    _zeitController.removeListener(_textControllerListener);
-    _zeitController.addListener(_textControllerListener);
-    _kontaktController.removeListener(_textControllerListener);
-    _kontaktController.addListener(_textControllerListener);
-    _bezahlungController.removeListener(_textControllerListener);
-    _bezahlungController.addListener(_textControllerListener);
-    _stadtController.removeListener(_textControllerListener);
-    _stadtController.addListener(_textControllerListener);
-    _stadtviertelController.removeListener(_textControllerListener);
-    _stadtviertelController.addListener(_textControllerListener);
+  void _setupTextControllerListenerAngebote() {
+    _adresseController.removeListener(_textControllerListenerAngebote);
+    _adresseController.addListener(_textControllerListenerAngebote);
+    _zeitController.removeListener(_textControllerListenerAngebote);
+    _zeitController.addListener(_textControllerListenerAngebote);
+    _kontaktController.removeListener(_textControllerListenerAngebote);
+    _kontaktController.addListener(_textControllerListenerAngebote);
+    _bezahlungController.removeListener(_textControllerListenerAngebote);
+    _bezahlungController.addListener(_textControllerListenerAngebote);
+    _stadtController.removeListener(_textControllerListenerAngebote);
+    _stadtController.addListener(_textControllerListenerAngebote);
+    _stadtviertelController.removeListener(_textControllerListenerAngebote);
+    _stadtviertelController.addListener(_textControllerListenerAngebote);
   }
 
-  Future<CloudNote> createOrGetExistingNote(BuildContext context) async {
+  Future<CloudNote> createOrGetExistingNoteAngebote(
+      BuildContext context) async {
     final existingNote = _note;
     if (existingNote != null) {
       return existingNote;
     }
     final currentUser = AuthService.firebase().currentUser!;
     final userId = currentUser.id;
-    final newNote = await _notesService.createNewNote(ownerUserId: userId);
+    final newNote =
+        await _notesService.createNewNoteAngebote(ownerUserId: userId);
     _note = newNote;
     return newNote;
   }
@@ -276,21 +280,21 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   void _deleteNoteIfTextIsEmpty() {
     final note = _note;
     if (_adresseController.text.isEmpty && note != null) {
-      _notesService.deleteNote(documentId: note.documentId);
+      _notesService.deleteNoteAngebote(documentId: note.documentId);
     }
   }
 
-  void _saveNoteIfTextNotEmpty() async {
+  void _saveNoteIfTextNotEmptyAngebote() async {
     final note = _note;
     final textAdresse = _adresseController.text;
-    final textStadt = selectedOptionStadt;
-    final textStadtviertel = selectedOptionStadtteil;
+    final textStadt = selectedOptionStadtAngebote;
+    final textStadtviertel = selectedOptionStadtteilAngebote;
     final textZeit = _zeitController.text;
     final textBezahlung = _bezahlungController.text;
     final textKontakt = _kontaktController.text;
     final textJob = selectedOption;
     if (textAdresse.isNotEmpty && textJob.isNotEmpty) {
-      await _notesService.updateNote(
+      await _notesService.updateNoteAngebote(
         documentId: note!.documentId,
         textAdresse: textAdresse,
         textJob: textJob,
@@ -306,7 +310,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   @override
   void dispose() {
     _deleteNoteIfTextIsEmpty();
-    _saveNoteIfTextNotEmpty();
+    _saveNoteIfTextNotEmptyAngebote();
     _adresseController.dispose();
     _kontaktController.dispose();
     _zeitController.dispose();
@@ -321,30 +325,27 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          context.loc.note,
-        ),
+        title: const Text('I want to do...'),
         backgroundColor: Colors.green.shade200,
         actions: [
           IconButton(
             onPressed: () {
-              _saveNoteIfTextNotEmpty();
-              
-              Navigator.of(context).pushNamedAndRemoveUntil(notesViewRoute, (route) => false);
+              _saveNoteIfTextNotEmptyAngebote();
+
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  notesViewAngeboteRoute, (route) => false);
               showAutomaticDeleteDialog(context);
-            } 
-            
-            ,
+            },
             icon: const Icon(Icons.save),
           )
         ],
       ),
       body: FutureBuilder(
-        future: createOrGetExistingNote(context),
+        future: createOrGetExistingNoteAngebote(context),
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
-              _setupTextControllerListener();
+              _setupTextControllerListenerAngebote();
 
               return Column(
                 children: [
@@ -359,38 +360,30 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                       onPressed: () {
                         showPopupMenuStadt(context);
                       },
-                      child: Text(selectedOptionStadt)),
+                      child: Text(selectedOptionStadtAngebote)),
                   const SizedBox(height: 16),
                   ElevatedButton(
                       onPressed: () {
                         showPopupMenuStadtteil(context);
                       },
-                      child: Text(selectedOptionStadtteil)),
+                      child: Text(selectedOptionStadtteilAngebote)),
                   TextField(
                     controller: _zeitController,
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration: const InputDecoration(
                       hintText:
-                          'Geben sie an wann und wie oft der Job gemacht werden soll.',
+                          'When do you have time to do the job?',
                     ),
                   ),
-                  TextField(
-                    controller: _adresseController,
-                    keyboardType: TextInputType.multiline,
-                    maxLines: null,
-                    decoration: const InputDecoration(
-                      hintText:
-                          'Geben sie an wo der Job ausgeführt werden soll.',
-                    ),
-                  ),
+                  
                   TextField(
                     controller: _bezahlungController,
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration: const InputDecoration(
                       hintText:
-                          'Geben sie an was sie sich als bezahlung vorstellen könnten.',
+                          'How much do you want to get paid?',
                     ),
                   ),
                   TextField(
@@ -398,7 +391,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     decoration: const InputDecoration(
-                      hintText: 'Geben sie daten zum Kontaktieren an.',
+                      hintText: 'Give in something to Kontakt you',
                     ),
                   ),
                 ],

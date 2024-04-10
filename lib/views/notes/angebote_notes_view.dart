@@ -1,6 +1,7 @@
 // ignore_for_file: sized_box_for_whitespace
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mynotes/constants/routes.dart';
@@ -10,24 +11,26 @@ import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/auth/bloc/auth_bloc.dart';
 import 'package:mynotes/services/auth/bloc/auth_event.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
-import 'package:mynotes/services/cloud/firebase_cloud_storage.dart';
+import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
+import 'package:mynotes/utilities/dialogs/automatic_delete_dialog.dart';
 import 'package:mynotes/utilities/dialogs/logout_dialog.dart';
-import 'package:mynotes/views/notes/notes_list_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart' show ReadContext;
+import 'package:mynotes/views/notes/notes_list_view_angebote.dart';
 
 extension Count<T extends Iterable> on Stream<T> {
   Stream<int> get getLength => map((event) => event.length);
 }
 
-class NotesView extends StatefulWidget {
-  const NotesView({Key? key}) : super(key: key);
+class NotesViewAngebote extends StatefulWidget {
+  const NotesViewAngebote({Key? key}) : super(key: key);
 
   @override
-  _NotesViewState createState() => _NotesViewState();
+  _NotesViewAngeboteState createState() => _NotesViewAngeboteState();
 }
 
-class _NotesViewState extends State<NotesView> {
-  late final FirebaseCloudStorage _notesService;
+class _NotesViewAngeboteState extends State<NotesViewAngebote> {
+  CloudNote? _note;
+  late final FirebaseCloudStorageAngebote _notesService;
   String get userId => AuthService.firebase().currentUser!.id;
   bool isInputVisible = false;
   TextEditingController _textEditingController = TextEditingController();
@@ -53,12 +56,14 @@ class _NotesViewState extends State<NotesView> {
   late List<CloudNote> notesList;
   late List<CloudNote> notesList2;
   late List<CloudNote> notesList3;
+  var whichView = 'angebotView';
+  String? currentUser = FirebaseAuth.instance.currentUser?.uid;
 
-  final notes = FirebaseFirestore.instance.collection('notes');
+  final notes = FirebaseFirestore.instance.collection('hi');
 
   @override
   void initState() {
-    _notesService = FirebaseCloudStorage();
+    _notesService = FirebaseCloudStorageAngebote();
     _textEditingController = TextEditingController();
     _setupTextControllerListener();
     _rawKeyboard = RawKeyboard.instance;
@@ -97,21 +102,6 @@ class _NotesViewState extends State<NotesView> {
     }
   }
 
-  void deleteOldNotes(
-    Iterable<CloudNote> notes,
-  ) async {
-    for (final note in notes) {
-      final dateToCheck = note.deletionTime.toDate();
-      if (dateToCheck.isBefore(DateTime.now())) {
-        
-        await _notesService.deleteNote(documentId: note.documentId);
-      } else {
-        
-      }
-    }
-  }
-
-
   void _onKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.enter) {
@@ -121,6 +111,24 @@ class _NotesViewState extends State<NotesView> {
       });
     }
   }
+
+  void deleteOldNotesAngebote(
+    Iterable<CloudNote> notes,
+  ) async {
+    final oneDayBefore= DateTime.now().subtract(const Duration(days: 1));
+    for (final note in notes) {
+      final dateToCheck = note.deletionTime.toDate();
+      if (dateToCheck.isBefore(DateTime.now())) {
+        
+        await _notesService.deleteNoteAngebote(documentId: note.documentId);
+      } else if(dateToCheck.isBefore(oneDayBefore)){
+        showAutomaticDeleteDialog(context);
+      }
+    }
+  }
+
+
+
 
   void _setupTextControllerListener() {
     _textEditingController.removeListener(_textControllerListener);
@@ -140,7 +148,7 @@ class _NotesViewState extends State<NotesView> {
     return Scaffold(
         appBar: AppBar(
           title: StreamBuilder(
-            stream: _notesService.allNotes(''),
+            stream: _notesService.allNotesAngebote(''),
             builder: (context, AsyncSnapshot<Iterable<CloudNote>> snapshot) {
               if (snapshot.hasData) {
                 return const Text('Aufträge');
@@ -391,7 +399,8 @@ class _NotesViewState extends State<NotesView> {
             ),
             IconButton(
               onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(createOrUpdateNoteRoute, (route) => false);
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil(createUpdateNoteViewAngeboteRoute, (route) => false);
               },
               icon: const Icon(Icons.add),
             ),
@@ -419,14 +428,14 @@ class _NotesViewState extends State<NotesView> {
           ],
         ),
         body: StreamBuilder(
-          stream: _notesService.allNotes(searchResult),
+          stream: _notesService.allNotesAngebote(searchResult),
           builder: (context, snapshot) {
             switch (snapshot.connectionState) {
               case ConnectionState.waiting:
               case ConnectionState.active:
                 if (snapshot.hasData) {
                   final allNotes = snapshot.data as Iterable<CloudNote>;
-                  deleteOldNotes(allNotes);
+                  deleteOldNotesAngebote(allNotes);
                   final filteredNotes = sortNotesFilter(
                     allNotes,
                     filterResult1,
@@ -440,18 +449,19 @@ class _NotesViewState extends State<NotesView> {
                     isSomethingChecked,
                   );
                   final sortedNotes = sortNotes(filteredNotes, searchResult);
-                  return NotesListView(
+                  return NotesListViewAngebote(
                     notes: sortedNotes,
                     onDeleteNote: (note) async {
-                      await _notesService.deleteNote(
+                      await _notesService.deleteNoteAngebote(
                           documentId: note.documentId);
                     },
                     onTap: (note) {
                       Navigator.of(context).pushNamed(
-                        showNotesRoute,
+                        showNotesAngeboteRoute,
                         arguments: note.documentId,
+                    
                       );
-                    },
+                    }, 
                   );
                 } else {
                   return const CircularProgressIndicator();
@@ -465,7 +475,7 @@ class _NotesViewState extends State<NotesView> {
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.search),
-              label: 'I need ...',
+              label: 'I need...',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.search),
@@ -490,7 +500,6 @@ class _NotesViewState extends State<NotesView> {
                 Navigator.of(context).pushNamedAndRemoveUntil(
                     notesViewAngeboteRoute, (route) => false);
                 break;
-             
             }
           },
         ));
