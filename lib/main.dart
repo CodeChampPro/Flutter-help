@@ -22,6 +22,8 @@ import 'package:mynotes/views/register_view.dart';
 import 'package:mynotes/views/verify_email_view.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+
+// dhsfaj ds hadsj hfdsk dhfdj sla sakfs   shdldas fhsajklas sd Print('djfh dkfsa ')
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -35,15 +37,11 @@ void main() async {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green.shade800,
           background: Colors.green.shade200,
           brightness: Brightness.light,
         ),
-
-        // Define the default `TextTheme`. Use this to specify the default
-        // text styling for headlines, titles, bodies of text, and more.
         textTheme: TextTheme(
           displayLarge: const TextStyle(
             fontSize: 72,

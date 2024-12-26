@@ -23,10 +23,12 @@ Future<void> updateNoteAngebote({
     required String textKontakt,
     required String textZeit,
     required String textStadt,
-    required String textStadtviertel
+    required String textStadtviertel,
+    DateTime? deletionTime,
+    
   }) async {
-    try {
-      await notesAngebote.doc(documentId).update({
+   if(documentId != ''){
+    await notesAngebote.doc(documentId).update({
         textJobFieldName: textJob,
         textAdresseFieldName: textAdresse,
         textBezahlungFieldName: textBezahlung,
@@ -35,12 +37,12 @@ Future<void> updateNoteAngebote({
         textStadtviertelFieldName: textStadtviertel,
         textStadtFieldName: textStadt,
       });
-      print("yes");
-    } catch (e) {
-      print('no');
-      print(e);
-      throw CouldNotUpdateNoteException();
-    }
+      if(deletionTime != null){
+        await notesAngebote.doc(documentId).update({
+          deletionTimeFieldName: deletionTime,
+        });
+      }
+   }
   }
 
   Stream<Iterable<CloudNote>> allNotesAngebote(String searchResult) {
@@ -66,7 +68,7 @@ Future<void> updateNoteAngebote({
       textZeitFieldName: '',
       textStadtFieldName:'',
       textStadtviertelFieldName: '',
-      textAngebotFieldName: '',
+      textAngebotFieldName: 'noteAngebot',
       deletionTimeFieldName: deletionTime,
       userIdFieldName: currentUserId,
     });
@@ -82,7 +84,7 @@ Future<void> updateNoteAngebote({
       textZeit: '',
       textStadt: '',
       textStadtviertel: '',
-      textAngebot: '',
+      textAngebot: 'noteAngebot',
       deletionTime: deletionTimestamp,
       userId: '',
     );

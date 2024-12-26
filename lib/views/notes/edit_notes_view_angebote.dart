@@ -172,71 +172,54 @@ class EditNotesAngeboteViewState extends State<EditNotesAngeboteView> {
     });
     
     }
-   void showPopupMenuStadtteil(BuildContext context) async {
-    selectedOptionStadtteil = await showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            ListTile(
-              title: const Text('Bogenhausen'),
-              onTap: () {
-                Navigator.pop(context, 'Bogenhausen');
-              },
-            ),
-            ListTile(
-              title: const Text('Haidhausen'),
-              onTap: () {
-                Navigator.pop(context, 'Haidhausen');
-              },
-            ),
-            ListTile(
-              title: const Text('Schwabing'),
-              onTap: () {
-                Navigator.pop(context, 'Schwabing');
-              },
-            ),
-            ListTile(
-              title: const Text('Laim'),
-              onTap: () {
-                Navigator.pop(context, 'Laim');
-              },
-            ),
-            ListTile(
-              title: const Text('Lehel'),
-              onTap: () {
-                Navigator.pop(context, 'Lehel');
-              },
-            ),
-            ListTile(
-              title: const Text('Maxvorstadt'),
-              onTap: () {
-                Navigator.pop(context, 'Maxvorstadt');
-              },
-            ),
-            ListTile(
-              title: const Text('Sendling'),
-              onTap: () {
-                Navigator.pop(context, 'Sendling');
-              },
-            ),
-            ListTile(
-              title: const Text('Passing'),
-              onTap: () {
-                Navigator.pop(context, 'Passing');
-              },
-            ),
-            
-          ],
-        );
-      },
-    );
-    setState(() {
-      
-    });
-    
-    }
+   void showPopupMenuStadtteil(
+  BuildContext context,
+  String stadtteil1,
+  String stadtteil2,
+  String stadtteil3,
+  String stadtteil4,
+  String stadtteil5,
+  String stadtteil6,
+  String stadtteil7,
+  String stadtteil8,
+  String stadtteil9,
+  String stadtteil10
+) async {
+  // Create a list of non-empty stadtteil parameters
+  List<String> stadtteile = [
+    stadtteil1,
+    stadtteil2,
+    stadtteil3,
+    stadtteil4,
+    stadtteil5,
+    stadtteil6,
+    stadtteil7,
+    stadtteil8,
+    stadtteil9,
+    stadtteil10
+  ].where((stadtteil) => stadtteil.isNotEmpty).toList();
+
+  selectedOptionStadtteil = await showModalBottomSheet(
+    context: context,
+    builder: (BuildContext context) {
+      return SingleChildScrollView(
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: stadtteile.map((stadtteil) {
+          return ListTile(
+            title: Text(stadtteil),
+            onTap: () {
+              Navigator.pop(context, stadtteil);
+            },
+          );
+        }).toList(),
+      )
+      );
+    },
+  );
+  setState(() {});
+}
+
 
  void _textControllerListener() async {
     final note = _note;
@@ -277,9 +260,11 @@ class EditNotesAngeboteViewState extends State<EditNotesAngeboteView> {
   }
 
   Future<void> fetchNoteData(String documentId) async {
+    
     var collection = FirebaseFirestore.instance.collection('notesAngebote');
     var docSnapshot = await collection.doc(documentId).get();
     if (docSnapshot.exists) {
+     
       setState(() {
         jobText = docSnapshot.data()?['jobText'] ?? 'No data';
         adresseText = docSnapshot.data()?['adresseText'] ?? 'No data';
@@ -327,6 +312,7 @@ class EditNotesAngeboteViewState extends State<EditNotesAngeboteView> {
     final textKontakt = _kontaktController.text;
     final textJob = selectedOption;
     
+    if(_kontaktController.text.isNotEmpty && textJob != "Choose what you want to do"){
     await _notesService.updateNoteAngebote(
       documentId: documentId,
       textAdresse: textAdresse,
@@ -337,6 +323,7 @@ class EditNotesAngeboteViewState extends State<EditNotesAngeboteView> {
       textKontakt: textKontakt,
       textZeit: textZeit,
     );
+    }
   }
 
   @override
@@ -395,7 +382,15 @@ class EditNotesAngeboteViewState extends State<EditNotesAngeboteView> {
                   }, child: Text(selectedOptionStadt)),
                   const SizedBox(height: 16),
                   ElevatedButton(onPressed: () {
-                    showPopupMenuStadtteil(context);
+                    if(selectedOptionStadt == 'München'){
+                        showPopupMenuStadtteil(context, 'Sendling', 'Bogenhausen','Haidhausen','Schwabing','Ried','Lehel','Pasing','Thalkirchen','Aubing','Moosach',);
+                        }else if(selectedOptionStadt == 'Stutgart'){
+                          showPopupMenuStadtteil(context, 'Mitte', 'Bad Cannstatt', 'Vaihingen', 'Feuerbach', 'Degerloch', 'Zuffenhausen', 'Sillenbruch', 'Möhringen', 'Türkheim', 'West');
+                        }else if(selectedOptionStadt == 'Berlin'){
+                          showPopupMenuStadtteil(context, 'Mitte', 'Spandau', 'Rainickendorf', 'Pankow', 'Friedrichshain-Kreuzberg', 'Charlottenburg', 'Lichtenberg', 'Marzahn-Hellersdorf','Steglitz-Zehlendorf', 'Köpenig',);
+                        }else if(selectedOptionStadt== 'Hamburg'){
+                          showPopupMenuStadtteil(context, 'Mitte', 'Nord', 'Eimsbüttel', 'Altona', 'Harburg', 'Haffencity', 'Bergedorf', 'Wandsbek','','');
+                        }
                   }, child: Text(selectedOptionStadtteil)),
                   TextField(
                     controller: _zeitController,

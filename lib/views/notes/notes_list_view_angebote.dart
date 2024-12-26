@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
 import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
 import 'package:mynotes/utilities/dialogs/delete_dialog.dart';
+import 'package:mynotes/utilities/generics/is_user_author.dart';
 import 'package:mynotes/utilities/generics/is_user_author_angebote.dart';
 
 typedef NoteCallback = void Function(CloudNote note);
@@ -35,7 +36,7 @@ class NotesListViewAngebote extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             trailing: FutureBuilder(
-                future: isUserAuthorAngebote(note.documentId),
+                future: isUserAuthor(note.documentId),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     bool isvisible = snapshot.data as bool;

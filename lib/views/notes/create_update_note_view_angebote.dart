@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:mynotes/constants/routes.dart';
-import 'package:mynotes/extensions/buildcontext/loc.dart';
 import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
 import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
@@ -124,6 +123,7 @@ class _CreateUpdateNoteViewAngeboteState
     }
   }
 
+ 
   void showPopupMenuStadt(BuildContext context) async {
     selectedOptionStadtAngebote = await showModalBottomSheet(
       context: context,
@@ -132,9 +132,9 @@ class _CreateUpdateNoteViewAngeboteState
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             ListTile(
-              title: const Text('Munich'),
+              title: const Text('München'),
               onTap: () {
-                Navigator.pop(context, 'Munich');
+                Navigator.pop(context, 'München');
               },
             ),
             ListTile(
@@ -162,67 +162,55 @@ class _CreateUpdateNoteViewAngeboteState
     setState(() {});
   }
 
-  void showPopupMenuStadtteil(BuildContext context) async {
-    selectedOptionStadtteilAngebote = await showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            ListTile(
-              title: const Text('Bogenhausen'),
-              onTap: () {
-                Navigator.pop(context, 'Bogenhausen');
-              },
-            ),
-            ListTile(
-              title: const Text('Haidhausen'),
-              onTap: () {
-                Navigator.pop(context, 'Haidhausen');
-              },
-            ),
-            ListTile(
-              title: const Text('Schwabing'),
-              onTap: () {
-                Navigator.pop(context, 'Schwabing');
-              },
-            ),
-            ListTile(
-              title: const Text('Laim'),
-              onTap: () {
-                Navigator.pop(context, 'Laim');
-              },
-            ),
-            ListTile(
-              title: const Text('Lehel'),
-              onTap: () {
-                Navigator.pop(context, 'Lehel');
-              },
-            ),
-            ListTile(
-              title: const Text('Maxvorstadt'),
-              onTap: () {
-                Navigator.pop(context, 'Maxvorstadt');
-              },
-            ),
-            ListTile(
-              title: const Text('Sendling'),
-              onTap: () {
-                Navigator.pop(context, 'Sendling');
-              },
-            ),
-            ListTile(
-              title: const Text('Passing'),
-              onTap: () {
-                Navigator.pop(context, 'Passing');
-              },
-            ),
-          ],
-        );
-      },
-    );
-    setState(() {});
-  }
+
+  void showPopupMenuStadtteil(
+  BuildContext context,
+  String stadtteil1,
+  String stadtteil2,
+  String stadtteil3,
+  String stadtteil4,
+  String stadtteil5,
+  String stadtteil6,
+  String stadtteil7,
+  String stadtteil8,
+  String stadtteil9,
+  String stadtteil10
+) async {
+  // Create a list of non-empty stadtteil parameters
+  List<String> stadtteile = [
+    stadtteil1,
+    stadtteil2,
+    stadtteil3,
+    stadtteil4,
+    stadtteil5,
+    stadtteil6,
+    stadtteil7,
+    stadtteil8,
+    stadtteil9,
+    stadtteil10
+  ].where((stadtteil) => stadtteil.isNotEmpty).toList();
+
+  selectedOptionStadtteilAngebote = await showModalBottomSheet(
+    context: context,
+    builder: (BuildContext context) {
+      return SingleChildScrollView(
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: stadtteile.map((stadtteil) {
+          return ListTile(
+            title: Text(stadtteil),
+            onTap: () {
+              Navigator.pop(context, stadtteil);
+            },
+          );
+        }).toList(),
+      )
+      );
+    },
+  );
+  setState(() {});
+}
+
 
   void _textControllerListenerAngebote() async {
     final note = _note;
@@ -279,31 +267,34 @@ class _CreateUpdateNoteViewAngeboteState
 
   void _deleteNoteIfTextIsEmpty() {
     final note = _note;
-    if (_adresseController.text.isEmpty && note != null) {
+    if (_kontaktController.text.isEmpty && selectedOption == "Choose what you want to do"  && note != null) {
       _notesService.deleteNoteAngebote(documentId: note.documentId);
     }
   }
 
   void _saveNoteIfTextNotEmptyAngebote() async {
     final note = _note;
+    if (note == null) {
+      return;
+    }
     final textAdresse = _adresseController.text;
+    final textZeit = _zeitController.text;
     final textStadt = selectedOptionStadtAngebote;
     final textStadtviertel = selectedOptionStadtteilAngebote;
-    final textZeit = _zeitController.text;
     final textBezahlung = _bezahlungController.text;
     final textKontakt = _kontaktController.text;
     final textJob = selectedOption;
-    if (textAdresse.isNotEmpty && textJob.isNotEmpty) {
-      await _notesService.updateNoteAngebote(
-        documentId: note!.documentId,
-        textAdresse: textAdresse,
-        textJob: textJob,
-        textBezahlung: textBezahlung,
-        textKontakt: textKontakt,
-        textZeit: textZeit,
-        textStadt: textStadt,
-        textStadtviertel: textStadtviertel,
-      );
+    if(_kontaktController.text.isEmpty && selectedOption != "Choose what you want to do"){
+    await _notesService.updateNoteAngebote(
+      documentId: note.documentId,
+      textAdresse: textAdresse,
+      textStadt: textStadt,
+      textStadtviertel: textStadtviertel,
+      textJob: textJob,
+      textBezahlung: textBezahlung,
+      textKontakt: textKontakt,
+      textZeit: textZeit,
+    );
     }
   }
 
@@ -330,6 +321,7 @@ class _CreateUpdateNoteViewAngeboteState
         actions: [
           IconButton(
             onPressed: () {
+              _deleteNoteIfTextIsEmpty();
               _saveNoteIfTextNotEmptyAngebote();
 
               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -364,9 +356,26 @@ class _CreateUpdateNoteViewAngeboteState
                   const SizedBox(height: 16),
                   ElevatedButton(
                       onPressed: () {
-                        showPopupMenuStadtteil(context);
+                        if(selectedOptionStadtAngebote == 'München'){
+                        showPopupMenuStadtteil(context, 'Sendling', 'Bogenhausen','Haidhausen','Schwabing','Ried','Lehel','Pasing','','','');
+                        }else if(selectedOptionStadtAngebote == 'Stutgart'){
+                          showPopupMenuStadtteil(context, 'Mitte', 'Bad Cannstatt', 'Vaihingen', 'Feuerbach', 'Degerloch', 'Zuffenhausen', 'Sillenbruch', 'Möhringen', 'Ostheim', 'West');
+                        }else if(selectedOptionStadtAngebote == 'Berlin'){
+                          showPopupMenuStadtteil(context, 'Mitte', 'Kreuzberg', 'Penzlauer Berg', 'Charlottenburg', 'Friedrichshain', 'Neukölln', 'Schöneberg', 'Wedding', 'Tiergarten', 'Steglitz-Zehlendorf');
+                        }else if(selectedOptionStadtAngebote == 'Hamburg'){
+                          showPopupMenuStadtteil(context, 'Altstadt', 'Neustadt', 'St. Pauli', 'Sternschanze', 'Eimsbüttel', 'Altona', 'Ottensee', 'Haffencity', 'Winterhude', 'Blankensee');
+                        }
                       },
                       child: Text(selectedOptionStadtteilAngebote)),
+                  TextField(
+                    controller: _adresseController,
+                    keyboardType: TextInputType.multiline,
+                    maxLines: null,
+                    decoration: const InputDecoration(
+                      hintText:
+                          'Give an exakt location about where the job will be. Can be more than one place.',
+                    ),
+                  ),
                   TextField(
                     controller: _zeitController,
                     keyboardType: TextInputType.multiline,

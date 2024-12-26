@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mynotes/views/notes/edit_notes_view.dart';
+import 'package:mynotes/views/notes/edit_notes_view_angebote.dart';
 
 class ShowNoteView extends StatefulWidget {
   final String documentId;
@@ -19,6 +20,7 @@ class _ShowNoteViewState extends State<ShowNoteView> {
   String bezahlungText = 'Loading...';
   String stadtText = 'Loading...';
   String stadtviertelText = 'Loading...';
+  String angebotText = '';
 
   String userId = '';
   String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -34,6 +36,7 @@ class _ShowNoteViewState extends State<ShowNoteView> {
 
   Future<void> fetchNoteData(String documentId) async {
     var collection = FirebaseFirestore.instance.collection('notes');
+    var collectionAngebote = FirebaseFirestore.instance.collection('notesAngebote');
     var docSnapshot = await collection.doc(documentId).get();
     if (docSnapshot.exists) {
       setState(() {
@@ -45,12 +48,22 @@ class _ShowNoteViewState extends State<ShowNoteView> {
         stadtText = docSnapshot.data()?['stadtText'] ?? 'No data';
         stadtviertelText = docSnapshot.data()?['stadtviertelText'] ?? 'No data';
         userId = docSnapshot.data()?['user_id'];
+        angebotText = docSnapshot.data()?['angebotText'] ?? 'No data';
       });
     } else {
-      setState(() {
-        jobText = 'Document not found';
-        adresseText = 'Document not found';
+       docSnapshot = await collectionAngebote.doc(documentId).get();
+       setState(() {
+        jobText = docSnapshot.data()?['jobText'] ?? 'No data';
+        adresseText = docSnapshot.data()?['adresseText'] ?? 'No data';
+        zeitText = docSnapshot.data()?['zeitText'] ?? 'No data';
+        bezahlungText = docSnapshot.data()?['bezahlungText'] ?? 'No data';
+        kontaktText = docSnapshot.data()?['kontaktText'] ?? 'No data';
+        stadtText = docSnapshot.data()?['stadtText'] ?? 'No data';
+        stadtviertelText = docSnapshot.data()?['stadtviertelText'] ?? 'No data';
+        userId = docSnapshot.data()?['user_id'];
+        angebotText = docSnapshot.data()?['angebotText'] ?? 'No data';
       });
+      
     }
     if (userId == currentUserId) {
       visibility = true;
@@ -70,13 +83,22 @@ class _ShowNoteViewState extends State<ShowNoteView> {
               visible: visibility,
               child: IconButton(
                 onPressed: () {
+                  if(angebotText == 'noteAngebot'){
                   Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (context) => EditNotesAngeboteView(
+                              documentId: widget.documentId,
+                            )),
+                    (route) => false,
+                  );}else{
+                    Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
                         builder: (context) => EditNotesView(
                               documentId: widget.documentId,
                             )),
                     (route) => false,
                   );
+                  }
                 },
                 icon: const Icon(Icons.edit),
               ))

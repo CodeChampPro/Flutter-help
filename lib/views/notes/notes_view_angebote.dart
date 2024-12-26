@@ -1,7 +1,6 @@
 // ignore_for_file: sized_box_for_whitespace
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mynotes/constants/routes.dart';
@@ -11,31 +10,29 @@ import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/auth/bloc/auth_bloc.dart';
 import 'package:mynotes/services/auth/bloc/auth_event.dart';
 import 'package:mynotes/services/cloud/cloud_note.dart';
+import 'package:mynotes/services/cloud/firebase_cloud_storage.dart';
 import 'package:mynotes/services/cloud/firebase_cloud_storage_angebote.dart';
-import 'package:mynotes/utilities/dialogs/automatic_delete_dialog.dart';
 import 'package:mynotes/utilities/dialogs/logout_dialog.dart';
+import 'package:mynotes/views/notes/notes_list_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart' show ReadContext;
-import 'package:mynotes/views/notes/notes_list_view_angebote.dart';
 
 extension Count<T extends Iterable> on Stream<T> {
   Stream<int> get getLength => map((event) => event.length);
 }
 
-class NotesViewAngebote extends StatefulWidget {
-  const NotesViewAngebote({Key? key}) : super(key: key);
+class NotesView extends StatefulWidget {
+  const NotesView({Key? key}) : super(key: key);
 
   @override
-  _NotesViewAngeboteState createState() => _NotesViewAngeboteState();
+  _NotesViewState createState() => _NotesViewState();
 }
 
-class _NotesViewAngeboteState extends State<NotesViewAngebote> {
-  CloudNote? _note;
+class _NotesViewState extends State<NotesView> {
   late final FirebaseCloudStorageAngebote _notesService;
   String get userId => AuthService.firebase().currentUser!.id;
   bool isInputVisible = false;
   TextEditingController _textEditingController = TextEditingController();
   String searchResult = 'Nachhilfe';
-  late final RawKeyboard _rawKeyboard;
   late bool? isChecked1;
   late bool? isChecked2;
   late bool? isChecked3;
@@ -56,18 +53,15 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
   late List<CloudNote> notesList;
   late List<CloudNote> notesList2;
   late List<CloudNote> notesList3;
-  var whichView = 'angebotView';
-  String? currentUser = FirebaseAuth.instance.currentUser?.uid;
 
-  final notes = FirebaseFirestore.instance.collection('hi');
+  final notes = FirebaseFirestore.instance.collection('notesAngebote');
 
   @override
   void initState() {
     _notesService = FirebaseCloudStorageAngebote();
     _textEditingController = TextEditingController();
     _setupTextControllerListener();
-    _rawKeyboard = RawKeyboard.instance;
-    _rawKeyboard.addListener(_onKeyEvent);
+    HardwareKeyboard.instance.addHandler(_onKeyEvent);
     isChecked1 = false;
     isChecked2 = false;
     isChecked3 = false;
@@ -102,33 +96,31 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
     }
   }
 
-  void _onKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.enter) {
-      searchResult = _textEditingController.text;
-      setState(() {
-        isInputVisible = false;
-      });
-    }
-  }
-
-  void deleteOldNotesAngebote(
+  void deleteOldNotes(
     Iterable<CloudNote> notes,
   ) async {
-    final oneDayBefore= DateTime.now().subtract(const Duration(days: 1));
     for (final note in notes) {
       final dateToCheck = note.deletionTime.toDate();
       if (dateToCheck.isBefore(DateTime.now())) {
         
         await _notesService.deleteNoteAngebote(documentId: note.documentId);
-      } else if(dateToCheck.isBefore(oneDayBefore)){
-        showAutomaticDeleteDialog(context);
+      } else {
+        
       }
     }
   }
 
 
-
+ bool _onKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+      searchResult = _textEditingController.text;
+      setState(() {
+        isInputVisible = false;
+      });
+      return true; 
+    }
+    return false;
+  }
 
   void _setupTextControllerListener() {
     _textEditingController.removeListener(_textControllerListener);
@@ -138,7 +130,7 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
   @override
   void dispose() {
     _textEditingController.dispose();
-    _rawKeyboard.removeListener(_onKeyEvent);
+    HardwareKeyboard.instance.removeHandler(_onKeyEvent);
 
     super.dispose();
   }
@@ -399,8 +391,7 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
             ),
             IconButton(
               onPressed: () {
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil(createUpdateNoteViewAngeboteRoute, (route) => false);
+                Navigator.of(context).pushNamedAndRemoveUntil(createUpdateNoteViewAngeboteRoute, (route) => false);
               },
               icon: const Icon(Icons.add),
             ),
@@ -435,7 +426,7 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
               case ConnectionState.active:
                 if (snapshot.hasData) {
                   final allNotes = snapshot.data as Iterable<CloudNote>;
-                  deleteOldNotesAngebote(allNotes);
+                  deleteOldNotes(allNotes);
                   final filteredNotes = sortNotesFilter(
                     allNotes,
                     filterResult1,
@@ -449,7 +440,7 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
                     isSomethingChecked,
                   );
                   final sortedNotes = sortNotes(filteredNotes, searchResult);
-                  return NotesListViewAngebote(
+                  return NotesListView(
                     notes: sortedNotes,
                     onDeleteNote: (note) async {
                       await _notesService.deleteNoteAngebote(
@@ -459,9 +450,8 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
                       Navigator.of(context).pushNamed(
                         showNotesAngeboteRoute,
                         arguments: note.documentId,
-                    
                       );
-                    }, 
+                    },
                   );
                 } else {
                   return const CircularProgressIndicator();
@@ -475,7 +465,7 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.search),
-              label: 'I need...',
+              label: 'I need ...',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.search),
@@ -500,6 +490,7 @@ class _NotesViewAngeboteState extends State<NotesViewAngebote> {
                 Navigator.of(context).pushNamedAndRemoveUntil(
                     notesViewAngeboteRoute, (route) => false);
                 break;
+             
             }
           },
         ));
@@ -567,4 +558,3 @@ Iterable<CloudNote> sortNotesFilter(
     return notes;
   }
 }
-  

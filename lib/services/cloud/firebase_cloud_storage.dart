@@ -23,10 +23,11 @@ class FirebaseCloudStorage {
     required String textKontakt,
     required String textZeit,
     required String textStadt,
-    required String textStadtviertel
+    required String textStadtviertel,
+    DateTime? deletionTime,
   }) async {
-    try {
-      await notes.doc(documentId).update({
+   if(documentId != ''){
+    await notes.doc(documentId).update({
         textJobFieldName: textJob,
         textAdresseFieldName: textAdresse,
         textBezahlungFieldName: textBezahlung,
@@ -35,11 +36,11 @@ class FirebaseCloudStorage {
         textStadtviertelFieldName: textStadtviertel,
         textStadtFieldName: textStadt,
       });
-      print("yes");
-    } catch (e) {
-      print('no');
-      print(e);
-      throw CouldNotUpdateNoteException();
+      if(deletionTime != null){
+        await notes.doc(documentId).update({
+          deletionTimeFieldName: deletionTime,
+        });
+      }
     }
   }
 
@@ -66,7 +67,7 @@ class FirebaseCloudStorage {
       textZeitFieldName: '',
       textStadtFieldName:'',
       textStadtviertelFieldName: '',
-      textAngebotFieldName: '',
+      textAngebotFieldName: 'noteNotAngebot',
       deletionTimeFieldName: deletionTimestamp,
       userIdFieldName: currentUserId,
     });
@@ -81,7 +82,7 @@ class FirebaseCloudStorage {
       textZeit: '',
       textStadt: '',
       textStadtviertel: '',
-      textAngebot: '',
+      textAngebot: 'noteNotAngebot',
       deletionTime: deletionTimestamp,
       userId: '',
     );

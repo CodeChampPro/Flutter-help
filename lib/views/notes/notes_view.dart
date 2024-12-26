@@ -1,5 +1,7 @@
 // ignore_for_file: sized_box_for_whitespace
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,19 +22,24 @@ extension Count<T extends Iterable> on Stream<T> {
 }
 
 class NotesView extends StatefulWidget {
-  const NotesView({Key? key}) : super(key: key);
+  const NotesView({
+    Key? key,
+  }) : super(key: key);
 
   @override
   _NotesViewState createState() => _NotesViewState();
 }
 
 class _NotesViewState extends State<NotesView> {
+  List<String> filterResultsFinal = [];
+  bool isScrollViewVisible = false;
   late final FirebaseCloudStorage _notesService;
   String get userId => AuthService.firebase().currentUser!.id;
   bool isInputVisible = false;
+  RelativeRect? popupMenuPosition;
   TextEditingController _textEditingController = TextEditingController();
   String searchResult = 'Nachhilfe';
-  late final RawKeyboard _rawKeyboard;
+  List<String> filterResults = [];
   late bool? isChecked1;
   late bool? isChecked2;
   late bool? isChecked3;
@@ -41,6 +48,14 @@ class _NotesViewState extends State<NotesView> {
   late bool? isChecked6;
   late bool? isChecked7;
   late bool? isChecked8;
+  late bool? isChecked9;
+  late bool? isChecked10;
+  late bool? isChecked11;
+  late bool? isChecked12;
+  late bool? isChecked13;
+  late bool? isChecked14;
+  late bool? isChecked15;
+
   late String filterResult1;
   late String filterResult2;
   late String filterResult3;
@@ -49,10 +64,75 @@ class _NotesViewState extends State<NotesView> {
   late String filterResult6;
   late String filterResult7;
   late String filterResult8;
-  late bool? isSomethingChecked;
+  late String filterResult9;
+  late String filterResult10;
+  late String filterResult11;
+  late String filterResult12;
+  late String filterResult13;
+  late String filterResult14;
+  late String filterResult15;
+  bool isSomethingChecked = false;
   late List<CloudNote> notesList;
   late List<CloudNote> notesList2;
   late List<CloudNote> notesList3;
+
+  List<String> stadtteileAuswahl = [];
+  String stadtGewealt = '';
+  List<Map> stadtAuswahl = [
+    {"name": "München", "isChecked": false},
+    {"name": "Stutgart", "isChecked": false},
+    {"name": "Berlin", "isChecked": false},
+    {"name": "Hamburg", "isChecked": false},
+  ];
+
+  List<String> hamburg = [
+    'Altstadt',
+    'Neustadt',
+    'St. Pauli',
+    'Sternschanze',
+    'Eimsbüttel',
+    'Altona',
+    'Ottensee',
+    'Haffencity',
+    'Winterhude',
+    'Blankensee',
+  ];
+
+  List<String> muenchen = [
+    'Sendling',
+    'Bogenhausen',
+    'Haidhausen',
+    'Schwabing',
+    'Ried',
+    'Lehel',
+    'Pasing',
+  ];
+
+  List<String> berlin = [
+    'Mitte',
+    'Kreuzberg',
+    'Penzlauer Berg',
+    'Charlottenburg',
+    'Friedrichshain',
+    'Neukölln',
+    'Schöneberg',
+    'Wedding',
+    'Tiergarten',
+    'Steglitz-Zehlendorf',
+  ];
+
+  List<String> stutgart = [
+    'Mitte',
+    'Bad Cannstatt',
+    'Vaihingen',
+    'Feuerbach',
+    'Degerloch',
+    'Zuffenhausen',
+    'Sillenbruch',
+    'Möhringen',
+    'Ostheim',
+    'West',
+  ];
 
   final notes = FirebaseFirestore.instance.collection('notes');
 
@@ -61,16 +141,25 @@ class _NotesViewState extends State<NotesView> {
     _notesService = FirebaseCloudStorage();
     _textEditingController = TextEditingController();
     _setupTextControllerListener();
-    _rawKeyboard = RawKeyboard.instance;
-    _rawKeyboard.addListener(_onKeyEvent);
+    filterResultsFinal = [];
+
+    HardwareKeyboard.instance.addHandler(_onKeyEvent);
     isChecked1 = false;
     isChecked2 = false;
     isChecked3 = false;
+    isChecked4 = false;
     isChecked5 = false;
     isChecked6 = false;
     isChecked7 = false;
     isChecked8 = false;
-    isChecked4 = false;
+    isChecked9 = false;
+    isChecked10 = false;
+    isChecked11 = false;
+    isChecked12 = false;
+    isChecked13 = false;
+    isChecked14 = false;
+    isChecked15 = false;
+
     filterResult1 = '';
     filterResult2 = '';
     filterResult3 = '';
@@ -79,22 +168,22 @@ class _NotesViewState extends State<NotesView> {
     filterResult6 = '';
     filterResult7 = '';
     filterResult8 = '';
-    isSomethingChecked = false;
+    filterResult9 = '';
+    filterResult10 = '';
+    filterResult11 = '';
+    filterResult12 = '';
+    filterResult13 = '';
+    filterResult14 = '';
+    filterResult15 = '';
+
+    
     notesList = [];
 
     super.initState();
   }
-
+  
   void _textControllerListener() async {
     final suche = _textEditingController.text;
-  }
-
-  void _setIsSomethingChecked() {
-    if (isChecked1 == true || isChecked2 == true || isChecked3 == true) {
-      isSomethingChecked = true;
-    } else {
-      isSomethingChecked = false;
-    }
   }
 
   void deleteOldNotes(
@@ -103,23 +192,207 @@ class _NotesViewState extends State<NotesView> {
     for (final note in notes) {
       final dateToCheck = note.deletionTime.toDate();
       if (dateToCheck.isBefore(DateTime.now())) {
-        
         await _notesService.deleteNote(documentId: note.documentId);
-      } else {
-        
-      }
+      } else {}
     }
   }
 
+  void filterFunktion() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Center(
+          child: Material(
+            type: MaterialType.transparency,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SingleChildScrollView(
+                      child: Container(
+                        width: 220,
+                        height: 250,
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize
+                                  .min, // Ensures the dialog is as small as needed
+                              children: [
+                                for (var favourite in stadtAuswahl)
+                                  CheckboxListTile(
+                                    checkboxShape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6)),
+                                    activeColor: Colors.green.shade800,
+                                    title: Text(favourite['name']),
+                                    value: favourite['isChecked'],
+                                    onChanged: (val) {
+                                      setState(() {
+                                        for (var stadt in stadtAuswahl) {
+                                          stadt['isChecked'] = false;
+                                        }
+                                        favourite['isChecked'] = val;
+                                      });
+                                    },
+                                  ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        for (var stadt in stadtAuswahl) {
+                                          if (stadt['isChecked'] == true) {
+                                            stadtGewealt = stadt['name'];
+                                          }
+                                        }
+                                        if (stadtGewealt == 'Hamburg') {
+                                          stadtteileAuswahl = hamburg;
+                                        } else if (stadtGewealt == 'München') {
+                                          stadtteileAuswahl = muenchen;
+                                        } else if (stadtGewealt == 'Berlin') {
+                                          stadtteileAuswahl = berlin;
+                                        } else if (stadtGewealt == 'Stutgart') {
+                                          stadtteileAuswahl = stutgart;
+                                        }
+                                        Navigator.of(context).pop();
+                                        showSecondPopupMenu(
+                                            context, stadtteileAuswahl);
+                                      },
+                                      child: const Text('Next'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        isSomethingChecked = false;
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text('Reset'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ));
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+ 
+  Future<List<String>> showSecondPopupMenu(
+      BuildContext context, List<String> items) async {
+    // Compute the position dynamically based on current widget location
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
 
-  void _onKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.enter) {
+    // Define the position for the second popup  fjdsal      fa  print('')
+    RelativeRect position = RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy, // position below the widget
+        offset.dx,
+        offset.dy);
+
+    List<bool> isChecked = List<bool>.filled(items.length, false);
+    List<String> filterResults = List<String>.filled(items.length, '');
+    Completer<List<String>> completer = Completer<List<String>>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: true, // Allows closing the dialog by tapping outside
+      builder: (context) {
+        return Center(
+          child: Material(
+            type: MaterialType.transparency,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                    width: 220,
+                    height: 350, // Set a smaller width for the dialog
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize
+                                .min, // Ensures the dialog is as small as needed
+                            children: [
+                              for (int i = 0; i < items.length; i++)
+                                CheckboxListTile(
+                                  title: Text(items[i]),
+                                  value: isChecked[i],
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      isChecked[i] = value ?? false;
+                                      filterResults[i] = value! ? items[i] : '';
+                                    });
+                                  },
+                                  checkboxShape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6)),
+                                  activeColor: Colors.green.shade800,
+                                  checkColor: Colors.white,
+                                ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    filterResultsFinal = filterResults
+                                        .where((element) => element.isNotEmpty)
+                                        .toList();
+                                    
+                                    print('f');
+
+                                    
+                                    setState(() {
+                                      searchResult = 'Babysitting';
+                                      isSomethingChecked = true;
+                                    });
+                                    
+                                  }
+                                  );
+                                  
+                                  completer.complete(filterResultsFinal);
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Apply'),
+                              ),
+                            ],
+                          ),
+                        )),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    return completer.future;
+  }
+
+  bool _onKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
       searchResult = _textEditingController.text;
       setState(() {
-        isInputVisible = false;
+        isInputVisible = false; 
       });
+      return true;
     }
+    return false;
   }
 
   void _setupTextControllerListener() {
@@ -130,13 +403,14 @@ class _NotesViewState extends State<NotesView> {
   @override
   void dispose() {
     _textEditingController.dispose();
-    _rawKeyboard.removeListener(_onKeyEvent);
+    HardwareKeyboard.instance.removeHandler(_onKeyEvent);
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    print('s');
     return Scaffold(
         appBar: AppBar(
           title: StreamBuilder(
@@ -151,220 +425,12 @@ class _NotesViewState extends State<NotesView> {
           ),
           backgroundColor: Colors.green.shade200,
           actions: [
-            PopupMenuButton<int>(
-              icon: const Icon(Icons.filter_list),
-              itemBuilder: (BuildContext context) {
-                return <PopupMenuEntry<int>>[
-                  PopupMenuItem<int>(
-                    value: 0,
-                    child: StatefulBuilder(builder: (context, innerSetState) {
-                      return SingleChildScrollView(
-                        child: Container(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'select Filters',
-                                  style: TextStyle(fontSize: 20),
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Bogenhausen',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked1,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked1 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult1 == '') {
-                                        filterResult1 = 'Bogenhausen';
-                                      } else {
-                                        filterResult1 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked1 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Haidhausen',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked2,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked2 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult2 == '') {
-                                        filterResult2 = 'Haidhausen';
-                                      } else {
-                                        filterResult2 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked2 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Schwabing',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked3,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked3 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult3 == '') {
-                                        filterResult3 = 'Schwabing';
-                                      } else {
-                                        filterResult3 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked3 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Lehel',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked4,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked4 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult4 == '') {
-                                        filterResult4 = 'Lehel';
-                                      } else {
-                                        filterResult4 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked4 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Maxvorstadt',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked5,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked5 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult5 == '') {
-                                        filterResult5 = 'Maxvorstadt';
-                                      } else {
-                                        filterResult5 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked5 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Sendling',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked6,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked6 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult6 == '') {
-                                        filterResult6 = 'Sendling';
-                                      } else {
-                                        filterResult6 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked6 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Pasing',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked7,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked2 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult7 == '') {
-                                        filterResult7 = 'Pasing';
-                                      } else {
-                                        filterResult7 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked7 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                CheckboxListTile(
-                                  title: const Text(
-                                    'Laim',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  value: isChecked8,
-                                  onChanged: (bool? newValue) {
-                                    innerSetState(() {
-                                      isChecked8 = newValue;
-                                      _setIsSomethingChecked();
-                                      if (filterResult8 == '') {
-                                        filterResult8 = 'Laim';
-                                      } else {
-                                        filterResult8 = '';
-                                      }
-                                    });
-                                    setState(() {
-                                      isChecked8 = newValue;
-                                    });
-                                  },
-                                  activeColor: Colors.amber.shade600,
-                                  checkColor: Colors.black,
-                                ),
-                                TextButton(
-                                    onPressed: () {
-                                      setState(() {});
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('apply'))
-                              ],
-                            )),
-                      );
-                    }),
-                  ),
-                ];
-              },
-            ),
+            
+            IconButton(
+                onPressed: () {
+                  filterFunktion();
+                },
+                icon: const Icon(Icons.filter)),
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: () {
@@ -391,7 +457,8 @@ class _NotesViewState extends State<NotesView> {
             ),
             IconButton(
               onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(createOrUpdateNoteRoute, (route) => false);
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                    createOrUpdateNoteRoute, (route) => false);
               },
               icon: const Icon(Icons.add),
             ),
@@ -418,15 +485,52 @@ class _NotesViewState extends State<NotesView> {
             )
           ],
         ),
+        
         body: StreamBuilder(
-          stream: _notesService.allNotes(searchResult),
+          stream: _notesService.allNotes(searchResult,),
+          
           builder: (context, snapshot) {
             switch (snapshot.connectionState) {
               case ConnectionState.waiting:
               case ConnectionState.active:
                 if (snapshot.hasData) {
+                  print('h');
                   final allNotes = snapshot.data as Iterable<CloudNote>;
                   deleteOldNotes(allNotes);
+
+                  // Referencing `filterResultsFinal` to apply dynamic filtering
+                  filterResult1 = filterResultsFinal.isNotEmpty
+                      ? filterResultsFinal[0]
+                      : '';
+                  filterResult2 = filterResultsFinal.length > 1
+                      ? filterResultsFinal[1]
+                      : '';
+                  filterResult3 = filterResultsFinal.length > 2
+                      ? filterResultsFinal[2]
+                      : '';
+                  filterResult4 = filterResultsFinal.length > 3
+                      ? filterResultsFinal[3]
+                      : '';
+                  filterResult5 = filterResultsFinal.length > 4
+                      ? filterResultsFinal[4]
+                      : '';
+                  filterResult6 = filterResultsFinal.length > 5
+                      ? filterResultsFinal[5]
+                      : '';
+                  filterResult7 = filterResultsFinal.length > 6
+                      ? filterResultsFinal[6]
+                      : '';
+                  filterResult8 = filterResultsFinal.length > 7
+                      ? filterResultsFinal[7]
+                      : '';
+                  filterResult9 = filterResultsFinal.length > 8
+                      ? filterResultsFinal[8]
+                      : '';
+                  filterResult10 = filterResultsFinal.length > 9
+                      ? filterResultsFinal[9]
+                      : '';
+
+                  // Apply the filters and get the filtered list of notes
                   final filteredNotes = sortNotesFilter(
                     allNotes,
                     filterResult1,
@@ -437,9 +541,14 @@ class _NotesViewState extends State<NotesView> {
                     filterResult6,
                     filterResult7,
                     filterResult8,
+                    filterResult9,
+                    filterResult10,
                     isSomethingChecked,
                   );
+
+                  // Sort notes based on search criteria
                   final sortedNotes = sortNotes(filteredNotes, searchResult);
+
                   return NotesListView(
                     notes: sortedNotes,
                     onDeleteNote: (note) async {
@@ -454,6 +563,7 @@ class _NotesViewState extends State<NotesView> {
                     },
                   );
                 } else {
+                  print('l  ');
                   return const CircularProgressIndicator();
                 }
               default:
@@ -483,14 +593,13 @@ class _NotesViewState extends State<NotesView> {
                     .pushNamedAndRemoveUntil(notesViewRoute, (route) => false);
                 break;
               case 1:
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                    usersNotesRoute, (route) => false);
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil(usersNotesRoute, (route) => false);
                 break;
               case 2:
                 Navigator.of(context).pushNamedAndRemoveUntil(
                     notesViewAngeboteRoute, (route) => false);
                 break;
-             
             }
           },
         ));
@@ -523,11 +632,14 @@ Iterable<CloudNote> sortNotesFilter(
     String filterResult6,
     String filterResult7,
     String filterResult8,
+    String filterResult9,
+    String filterResult10,
     bool? isSomethingChecked) {
   final List<CloudNote> specificValueNotesFilter = [];
   final List<CloudNote> otherNotesFilter = [];
-
   if (isSomethingChecked == true) {
+    print('d');
+
     for (final note in notes) {
       if (note.textStadtviertel == filterResult1 ||
           note.textStadtviertel == filterResult2 ||
@@ -536,25 +648,22 @@ Iterable<CloudNote> sortNotesFilter(
           note.textStadtviertel == filterResult5 ||
           note.textStadtviertel == filterResult6 ||
           note.textStadtviertel == filterResult7 ||
+          note.textStadtviertel == filterResult10 ||
+          note.textStadtviertel == filterResult9 ||
           note.textStadtviertel == filterResult8) {
         specificValueNotesFilter.add(note);
       } else {
         otherNotesFilter.add(note);
       }
     }
-    filterResult1 = '';
-    filterResult2 = '';
-    filterResult3 = '';
-    filterResult4 = '';
-    filterResult5 = '';
-    filterResult6 = '';
-    filterResult7 = '';
-    filterResult8 = '';
-
+  // fd  afd  f  if the zurich has the nw(){doasf afd  asf } fo i in notes(i= i+1) for the worst  can i have the new found luck because i have had the newest invention in years
+  //xbut i ca have the most luck because i have foole d hmm and i () { but i cannot havr }  dkfja  földask jfölajf akdjf for I in range 10 ()dskjf h
+  // when i have another way of speaking i can but if i have a i want to djf a f(){ fo print(but if i have tfor ling this will suck o )}
     return [
       ...specificValueNotesFilter,
     ];
   } else {
+    print('i');
     return notes;
   }
 }
